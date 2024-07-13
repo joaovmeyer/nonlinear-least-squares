@@ -1,83 +1,130 @@
 begin
 
-using Plots;
-
-  
-function f(x)
-	return 2.4 * exp(0.3 * x);
-end
-
-X = [i for i =-5:0.5:5];
-Y = [f(x)+(rand()-0.5) * 1 for x in X];
-
-plot(X, [f(x) for x in X]);
-scatter!(X, Y)
+	using Plots;
+	using Random;
 
 
 
-function makeNormalizer(list, minVal = -1.0, maxVal = 1.0)
-
-	lower = (min(list...));
-	higher = (max(list...));
-
-	normalizer(x) = (x - lower) / (higher - lower) * (maxVal - minVal) + minVal;
-	unnormalizer(x) = (x - minVal) / (maxVal - minVal) * (higher - lower) + lower;
-
-	return (normalizer, unnormalizer);
-	
-end
-
-(normalizerX, unnormalizerX) = makeNormalizer(X, -1, 1);
-(normalizerY, unnormalizerY) = makeNormalizer((Y), 0.0, 1.0);
-
-normalizedX = normalizerX.(X);
-normalizedY = normalizerY.(Y);
-
-scatter(normalizedX, normalizedY);
-
-
-  
-
-
-
-paramA = 0.1;
-paramB = 2.0;
-
-lr = 0.5;
-
-for iter = 1:100
-	global paramA, paramB;
-
-	c = 0.0;
-	d = 0.0;
-	gradB = 0.0;
-
-	for i = 1:length(X)
-
-		x = normalizedX[i];
-		y = normalizedY[i];
-		
-		e = exp(paramB * x)
-		c += e;
-		d += y;
-
-		gradB += (paramA * e - y) * paramA * x * e;
+	function f(x)
+		return 2.4 * exp(0.3 * x);
 	end
 
-	# dL/da x-intersect
-	paramA = d / c;
-	paramB -= gradB * lr;
+	X = [i for i =-10:0.1:15];
+	Y = [f(x)+(rand()-0.5) * 1 for x in X];
 
-end
+	# shuffle our data
+	ordem = randperm(length(X));
+	X = X[ordem];
+	Y = Y[ordem];
+		
+	scatter(X, Y)
+	plot!(f);
+
+
+
+	Y_norm = Y ./ (sum(abs.(Y)) * 0.1);
+	scatter(X, Y_norm);
+
+
+	# initialize a and b value
+	closeToZero = Y_norm[Bool[abs(X[i]) < 0.2 for i = 1:length(X)]]
+	initialParamA = sum(closeToZero) / length(closeToZero);
+
+	initialParamB = 0.0;
+	s = 0;
+	for i = 1:length(X)
+		y = Y_norm[i];
+		if (y <= 0.1 || abs(X[i]) < 0.1) 
+			continue;
+		end
+
+		s += 1;
+		initialParamB += (log(y) - log(initialParamA)) / X[i];
+	end
+	initialParamB /= s;
 	
-println(paramA, ", ", paramB);
+	print("Initial guess for a: ");
+	println(initialParamA * sum(abs.(Y)) * 0.1);
+
+	
+	print("Initial guess for b: ");
+	println(initialParamB)
 
 
-function g(x)
-	return unnormalizerY(paramA * exp(paramB * normalizerX(x)));
-end
 
-scatter(X, Y)
-plot!(g);
+
+
+	paramA = initialParamA;
+	paramB = initialParamB;
+
+	println(paramA);
+	println(paramB);
+
+	N = length(X);
+	lr = 0.005;
+	batchSize = 25;
+
+	println(N);
+
+	iterações = [];
+	loss = [];
+	
+	for iter = 1:500
+		global paramA, paramB;
+	
+		c = 0.0;
+		d = 0.0;
+		gradB = 0.0;
+
+		L = 0.0;
+	
+		for i = 1:N
+			x = X[i];
+			y = Y_norm[i];
+			
+			e = exp(paramB * x)
+			c += e * e;
+			d += y * e;
+	
+			gradB += (paramA * e - y) * paramA * x * e;
+	
+			if (i % batchSize == 0)
+				paramA = d / c;
+				paramB -= (gradB / batchSize) * lr;
+				
+				gradB = 0.0;
+				c = 0.0;
+				d = 0.0;
+			end
+
+			L += (paramA * e - y)^2;
+		end
+
+		append!(loss, L);
+		append!(iterações, iter);
+
+		if (N % batchSize != 0)
+			paramA = d / c;
+			paramB -= (gradB / batchSize) * lr;
+		end
+	
+	end
+	
+	paramA *= sum(abs.(Y)) * 0.1;
+	println(paramA, ", ", paramB);
+
+	plot(iterações, loss);
+	plot!(xlabel="iterações", ylabel="precisão");
+
+
+
+
+	function g(x)
+		return paramA * exp(paramB * x);
+	end
+	
+	scatter(X, Y)
+	plot!(g);
+
 
 end
