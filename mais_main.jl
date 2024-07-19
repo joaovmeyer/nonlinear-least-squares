@@ -96,73 +96,73 @@ begin
 		
 	(initialParamA, initialParamB) = initializeParameters(X,Y_norm)
 	
-	print("Initial guess for a: ");
-	println(initialParamA * sum(abs.(Y)) * 0.1);
+	print("Initial guess for a: ")
+	println(initialParamA * value_of_normalize)
 
 	
-	print("Initial guess for b: ");
+	print("Initial guess for b: ")
 	println(initialParamB)
 end
 ###
 
 ###
 begin 
-	paramA = initialParamA;
-	paramB = initialParamB;
+	paramA = initialParamA
+	paramB = initialParamB
 
-	println(paramA);
-	println(paramB);
+	println(paramA)
+	println(paramB)
 
-	N = length(X);
-	lr = 0.005;
-	batchSize = 25;
+	N = length(X)
+	lr = 0.005 
+	batchSize = 25
 
-	iterações = [];
-	loss = [];
+	iterações = []
+	loss = []
 	
 	for iter = 1:100
-		global paramA, paramB;
+		global paramA, paramB
 	
-		c = 0.0;
-		d = 0.0;
-		gradB = 0.0;
+		c = 0.0
+		d = 0.0
+		gradB = 0.0
 
-		L = 0.0;
+		L = 0.0
 	
 		for i = 1:0
-			x = X[i];
-			y = Y_norm[i];
+			x = X[i]
+			y = Y_norm[i]
 			
 			e = exp(paramB * x)
-			c += e * e;
-			d += y * e;
+			c += e * e
+			d += y * e
 	
-			gradB += (paramA * e - y) * paramA * x * e;
+			gradB += (paramA * e - y) * paramA * x * e
 	
 			if (i % batchSize == 0)
-				paramA = d / c;
-				paramB -= (gradB / batchSize) * lr;
+				paramA = d / c
+				paramB -= (gradB / batchSize) * lr
 				
-				gradB = 0.0;
-				c = 0.0;
-				d = 0.0;
+				gradB = 0.0
+				c = 0.0
+				d = 0.0
 			end
 
-			L += (paramA * e - y)^2;
+			L += (paramA * e - y)^2
 		end
 
-		append!(loss, L);
-		append!(iterações, iter);
+		append!(loss, L)
+		append!(iterações, iter)
 
 		if (N % batchSize != 0)
-			paramA = d / c;
-			paramB -= (gradB / batchSize) * lr;
+			paramA = d / c
+			paramB -= (gradB / batchSize) * lr
 		end
 	
 	end
 	
-	paramA *= value_of_normalize ;
-	println(paramA, ", ", paramB);
+	paramA *= value_of_normalize 
+	println(paramA, ", ", paramB)
 
 	plot(iterações, loss, xlabel="iterações", ylabel="precisão")
 end
@@ -171,10 +171,10 @@ end
 ###
 begin
 	function g(x)
-		return paramA * exp(paramB * x);
+		return paramA * exp(paramB * x)
 	end
 	
 	scatter(X, Y)
-	plot!(g);
+	plot!(g)
 end
 ###
