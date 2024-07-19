@@ -66,7 +66,8 @@ function initializeParameters(X,Y)
 	
   #If x->0, then a * exp(b*x) -> a
 	initialParamA = sum(closeToZero) / length(closeToZero)
-
+	log_of_A = log(initialParamA)
+	
   #b = (ln(y) - ln(a)) / x
 	initialParamB = 0.0
  
@@ -81,7 +82,7 @@ function initializeParameters(X,Y)
 
 		
 		valid_data += 1
-		initialParamB += (log(y) - log(initialParamA)) / X[i]
+		initialParamB += (log(y) - log_of_A) / X[i]
 	
 	end
 	
