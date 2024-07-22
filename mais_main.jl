@@ -43,7 +43,7 @@ end
 
 ###
 begin
-	value_of_normalize = sum(abs.(Y)) * 0.1
+	value_of_normalize = sum(Y) * 0.1
 	Y_norm = normalize_vector(Y,value_of_normalize) 
 
   	# Compare the diference between normalized data and normal data
@@ -107,11 +107,12 @@ end
 ###
 
 ###
-begin 
-	function evaluateParam(X,Y,correction_value=1,maxIterations=100,lr=0.05,batchSize=15) 
+	function evaluateParam(X,Y,correction_value=1,maxIterations=200,lr=0.05,batchSize=15) 
 	# correction_value is used because most of the tests
 	# were done using normalized data
-	(a,b) = initializeParameters(X,Y)
+	new_Y = copy(Y)
+	(a,b) = initializeParameters(X,new_Y)
+	
 
 	iterations = []
 	loss = []
@@ -119,7 +120,7 @@ begin
 	N = length(X)
 	
 	for iter = 1:maxIterations
-	
+		println((a,b))
 		c = 0.0
 		d = 0.0
 		gradB = 0.0
@@ -128,7 +129,7 @@ begin
 	
 		for i = 1:N
 			x = X[i]
-			y = Y_norm[i]
+			y = new_Y[i]
 			
 			e = exp(b * x)
 
@@ -162,8 +163,8 @@ begin
 
 	end
 	
-	return (a * correction_value, b, iterations, loss)
-end
+		return (a * correction_value, b, iterations, loss)
+	end
 ###
 
 ###
@@ -182,15 +183,19 @@ end
 function compareResults(a::Float64,b::Float64,X::Vector,noise::Float64,normalize=false::Bool)
 	f(x) = a * exp(b * x)
 	Y = [f(i) + (rand()-.5) * noise for i=1:length(X)]
+	correction_value = sum(Y) * .1
 	
 	if normalize
-		correction_value = sum(Y) * .1
+		
 		Y = normalize_vector(Y,correction_value)
-		(paramA,paramB,iterations,loss) = evaluateParam(X,Y,correction_value)
+		
+		paramA,paramB,iterations,loss = evaluateParam(X,Y,correction_value)
 		
 	else
 	
-		(paramA,paramB,iterations,loss) = evaluateParam(X,Y,correction_value)
+		Y = normalize_vector(Y,sign(correction_value))
+		println(Y)
+		paramA,paramB,iterations,loss = evaluateParam(X,Y,correction_value)
 		
 	end
 	
