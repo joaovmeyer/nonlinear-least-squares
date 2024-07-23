@@ -22,29 +22,22 @@ begin
 
 
 
-	Y_norm = Y ./ (sum(abs.(Y)) * 0.1);
+	normVal = sum(Y) * 0.1;
+	Y_norm = Y ./ normVal;
 	scatter(X, Y_norm);
 
 
 	# initialize a and b value
-	closeToZero = Y_norm[Bool[abs(X[i]) < 0.2 for i = 1:length(X)]]
-	initialParamA = sum(closeToZero) / length(closeToZero);
+	positiveYs = [Y_norm[i] >= 1e-5 for i = 1:N];
+	numPositives = sum(positiveYs);
 
-	initialParamB = 0.0;
-	s = 0;
-	for i = 1:length(X)
-		y = Y_norm[i];
-		if (y <= 0.1 || abs(X[i]) < 0.1) 
-			continue;
-		end
+	A = [ones(numPositives) X[positiveYs]];
 
-		s += 1;
-		initialParamB += (log(y) - log(initialParamA)) / X[i];
-	end
-	initialParamB /= s;
+	l, initialParamB = A \ log.(Y_norm[positiveYs]);
+	initialParamA = exp(l);
 	
 	print("Initial guess for a: ");
-	println(initialParamA * sum(abs.(Y)) * 0.1);
+	println(initialParamA * normVal);
 
 	
 	print("Initial guess for b: ");
@@ -54,67 +47,100 @@ begin
 
 
 
-	paramA = initialParamA;
-	paramB = initialParamB;
+	# paramA and paramB -> gradient descent
+		paramA = initialParamA;
+		paramB = initialParamB; 
 
-	println(paramA);
-	println(paramB);
-
-	N = length(X);
-	lr = 0.005;
-	batchSize = 25;
-
-	println(N);
-
-	iterações = [];
-	loss = [];
+		# paramA2 and paramB2 -> Newton's method
+		paramA2 = initialParamA;
+		paramB2 = initialParamB;
 	
-	for iter = 1:500
-		global paramA, paramB;
+		lr = 0.001;
+		batchSize = 75;
 	
-		c = 0.0;
-		d = 0.0;
-		gradB = 0.0;
-
-		L = 0.0;
+		println(N);
 	
-		for i = 1:N
-			x = X[i];
-			y = Y_norm[i];
+		iterações = [];
+		loss = [];
+		loss2 = [];
+		
+		for iter = 1:1000
+			global paramA, paramA2, paramB, paramB2;
+		
+			c = 0.0;
+			d = 0.0;
+			gradB = 0.0;
 			
-			e = exp(paramB * x)
-			c += e * e;
-			d += y * e;
+			c2 = 0.0;
+			d2 = 0.0;
+			gradB2 = 0.0;
 	
-			gradB += (paramA * e - y) * paramA * x * e;
-	
-			if (i % batchSize == 0)
-				paramA = d / c;
-				paramB -= (gradB / batchSize) * lr;
+			L = 0.0;
+			L2 = 0.0;
+			E = 0.0;
+		
+			for i = 1:N
+				x = X[i];
+				y = Y_norm[i];
 				
-				gradB = 0.0;
-				c = 0.0;
-				d = 0.0;
+				e = exp(paramB * x)
+				e2 = exp(paramB2 * x)
+				
+				c += e * e;
+				d += y * e;
+				
+				c2 += e2 * e2;
+				d2 += y * e2;
+		
+				gradB += (paramA * e - y) * paramA * x * e;
+				gradB2 += (paramA2 * e2 - y) * paramA2 * x * e2;
+				
+				L += (paramA * e - y)^2;
+				
+				L2 += (paramA2 * e2 - y)^2;
+				E += (paramA2 * e2 - y)^2;
+		
+				if (i % batchSize == 0)
+					paramA = d / c;
+					paramB -= (gradB / batchSize) * lr;
+					
+					paramA2 = d2 / c2;
+					paramB2 += E / gradB2;
+					
+					gradB = 0.0
+					gradB2 = 0.0;
+					c = 0.0;
+					d = 0.0;
+					c2 = 0.0;
+					d2 = 0.0;
+					E = 0.0;
+				end
+	
 			end
-
-			L += (paramA * e - y)^2;
-		end
-
-		append!(loss, L);
-		append!(iterações, iter);
-
-		if (N % batchSize != 0)
-			paramA = d / c;
-			paramB -= (gradB / batchSize) * lr;
-		end
 	
-	end
+			append!(loss, L);
+			append!(loss2, L2);
+			append!(iterações, iter);
 	
-	paramA *= sum(abs.(Y)) * 0.1;
-	println(paramA, ", ", paramB);
-
-	plot(iterações, loss);
-	plot!(xlabel="iterações", ylabel="precisão");
+			if (N % batchSize != 0)
+				paramA = d / c;
+				paramB -= (gradB / (N % batchSize)) * lr;
+				
+				paramA2 = d2 / c2;
+				paramB2 += E / gradB2;
+		end
+		
+		end
+		
+		paramA *= normVal;
+		paramA2 *= normVal;
+	
+		println("Gradient descent: ", paramA, ", ", paramB);
+		println("Newton: ", paramA2, ", ", paramB2);
+	
+		plot(iterações, loss, label="gradient descent");
+		plot!(iterações, loss2, label="Newton");
+		plot!(xlabel="iterações", ylabel="precisão")
 
 
 
@@ -122,9 +148,12 @@ begin
 	function g(x)
 		return paramA * exp(paramB * x);
 	end
+	function g2(x)
+		return paramA2 * exp(paramB2 * x);
+	end
 	
-	scatter(X, Y)
-	plot!(g);
-
+	scatter(X, Y, label="data")
+	plot!(g, label="Gradient descent");
+	plot!(g2, label="Newton");
 
 end
