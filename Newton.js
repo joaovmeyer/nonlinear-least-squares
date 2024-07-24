@@ -12,7 +12,10 @@ function Newton(X, Y, maxIter = 100)
 
 	A = [ones(numPositives) X[positiveYs]];
 
+	# solves the linear system for initial parameters a and b
 	l, initialParamB = A \ log.(Y_norm[positiveYs]);
+	
+	# a = epx(ln(a))
 	initialParamA = exp(l);
 	
 	
@@ -34,13 +37,15 @@ function Newton(X, Y, maxIter = 100)
 
 		for i = 1:N
 			e = exp(paramB * X[i]);
-			
+
+			# d(Rᵢ)/da
 			JTJ[1, 1] += e * e;
 			JTJ[1, 2] += paramA * X[i] * e * e;
 			JTJ[2, 1] += paramA * X[i] * e * e;
+			# D(Rᵢ)/db
 			JTJ[2, 2] += paramA * paramA * X[i] * X[i] * e * e;
 
-			ri = paramA * e - Y[i];
+			ri = paramA * e - Y_norm[i];
 
 			JTr[1, 1] += ri * e;
 			JTr[2, 1] += ri * paramA * X[i] * e;
