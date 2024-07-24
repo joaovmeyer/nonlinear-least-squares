@@ -42,6 +42,7 @@ function Newton(X, Y, maxIter = 100)
 			JTJ[1, 1] += e * e;
 			JTJ[1, 2] += paramA * X[i] * e * e;
 			JTJ[2, 1] += paramA * X[i] * e * e;
+			
 			# D(Rᵢ)/db
 			JTJ[2, 2] += paramA * paramA * X[i] * X[i] * e * e;
 
@@ -56,6 +57,13 @@ function Newton(X, Y, maxIter = 100)
 		paramB -= delta[2];
 		
 	end
+	print("Final guess for a after $maxIter iterations: ");
+	println(initialParamA * normVal);
 
-	return paramA * normVal, paramB;
+	
+	print("Final guess for b after $maxIter iterations: ");
+	println(initialParamB)
+	
+	return (paramA * normVal, paramB);
 end
+  
