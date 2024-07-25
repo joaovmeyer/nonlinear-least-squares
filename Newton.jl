@@ -58,11 +58,11 @@ function Newton(X, Y, maxIter = 100)
 		
 	end
 	print("Final guess for a after $maxIter iterations: ");
-	println(initialParamA * normVal);
+	println(paramA * normVal);
 
 	
 	print("Final guess for b after $maxIter iterations: ");
-	println(initialParamB)
+	println(paramB)
 	
 	return (paramA * normVal, paramB);
 end
