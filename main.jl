@@ -6,7 +6,14 @@ end
 ###
 
 ###
-	function Newton(X, Y, maxIter = 100)
+begin
+	using Plots
+	using Random
+
+###
+
+###
+function Newton(X, Y, maxIter = 100,initialParameters=true)
 
 	N = length(X);
 
@@ -14,35 +21,44 @@ end
 	normVal = sum(Y) * 0.1;
 	Y_norm = Y ./ normVal;
 
-	# initialize a and b value
-	positiveYs = [Y_norm[i] >= 1e-5 for i = 1:N];
-	numPositives = sum(positiveYs);
-
-	A = [ones(numPositives) X[positiveYs]];
-
-	# solves the linear system for initial parameters a and b
-	l, initialParamB = A \ log.(Y_norm[positiveYs]);
+	if initialParameters
+		# initialize a and b value
+		positiveYs = [Y_norm[i] >= 1e-5 for i = 1:N];
+		numPositives = sum(positiveYs);
 	
-	# a = epx(ln(a))
-	initialParamA = exp(l);
+		A = [ones(numPositives) X[positiveYs]];
 	
+		# solves the linear system for initial parameters a and b
+		l, initialParamB = A \ log.(Y_norm[positiveYs]);
+		
+		# a = epx(ln(a))
+		initialParamA = exp(l);
+		
+		
+		print("Initial guess for a with Newton: ");
+		println(initialParamA * normVal);
 	
-	print("Initial guess for a with Newton: ");
-	println(initialParamA * normVal);
-
+		
+		print("Initial guess for b with Newton: ");
+		println(initialParamB)
 	
-	print("Initial guess for b with Newton: ");
-	println(initialParamB)
+		# tunning the initial parameters
+	
+		paramA = initialParamA;
+		paramB = initialParamB;
+	
+	else
+		
+		paramA,paramB = 0.1, 0.1
+		
+	end
 
-
-	# tunning the initial parameters
-	paramA = initialParamA;
-	paramB = initialParamB;
 
 	loss = [];
-	loss_ri = 0;
 	
 	for iter = 1:maxIter
+		
+		loss_ri = 0;
 		JTJ = zeros(2, 2);
 		JTr = zeros(2, 1);
 
@@ -59,7 +75,7 @@ end
 
 			JTr[1, 1] += ri * e;
 			JTr[2, 1] += ri * paramA * X[i] * e;
-			loss_ri += ri^2
+			loss_ri += ri * ri
 			
 		end
 
@@ -82,7 +98,99 @@ end
 ###
 
 ###
-function GradientDescent(X,Y,maxIterations=500,lr=0.05,batchSize=50)
+function LevenbergMarquardt(X, Y, maxIter = 100,damping=3,initialParameters=true)
+
+	N = length(X);
+
+	# normalizing Y value
+	normVal = sum(Y) * 0.1;
+	Y_norm = Y ./ normVal;
+
+	if initialParameters
+		# initialize a and b value
+		positiveYs = [Y_norm[i] >= 1e-5 for i = 1:N];
+		numPositives = sum(positiveYs);
+	
+		A = [ones(numPositives) X[positiveYs]];
+	
+		# solves the linear system for initial parameters a and b
+		l, initialParamB = A \ log.(Y_norm[positiveYs]);
+		
+		# a = epx(ln(a))
+		initialParamA = exp(l);
+		
+		
+		print("Initial guess for a with LevenbergMarquardt: ");
+		println(initialParamA * normVal);
+	
+		
+		print("Initial guess for b with LevenbergMarquardt: ");
+		println(initialParamB)
+	
+		# tunning the initial parameters
+		paramA = initialParamA;
+		paramB = initialParamB;
+
+	else
+		paramA,paramB = 0.1, 0.1;		
+	end
+
+
+	loss = [];
+	
+	for iter = 1:maxIter
+		
+		loss_ri = 0;
+		JTJ = zeros(2, 2);
+		JTr = zeros(2, 1);
+
+		for i = 1:N
+			e = exp(paramB * X[i]);
+
+			JTJ[1, 1] += e * e;
+			JTJ[1, 2] += paramA * X[i] * e * e;
+			
+			JTJ[2, 1] += paramA * X[i] * e * e;			
+			JTJ[2, 2] += paramA * paramA * X[i] * X[i] * e * e;
+
+			ri = paramA * e - Y_norm[i];
+
+			JTr[1, 1] += ri * e;
+			JTr[2, 1] += ri * paramA * X[i] * e;
+			loss_ri += ri * ri
+			
+		end
+		append!(loss,loss_ri)
+		
+		# delayed gratification
+		if (iter != 1 && loss_ri > loss[end])
+			damping *= 2
+		else
+			damping /= 3
+		end
+
+		JTJ[1,1] += damping * JTJ[1,1]
+		JTJ[2,2] += damping * JTJ[2,2]
+		
+		
+		delta = JTJ \ JTr;
+		paramA -= delta[1];
+		paramB -= delta[2];
+		
+	end
+	print("Final guess for a after $maxIter iterations with LevenbergMarquardt: ");
+	println(paramA * normVal);
+
+	
+	print("Final guess for b after $maxIter iterations with LevenbergMarquardt: ");
+	println(paramB)
+	
+	return (paramA * normVal, paramB,loss);
+end
+###
+
+###
+function GradientDescent(X,Y,maxIterations=500,lr=0.05,batchSize=50,initialParameters=true)
 	
 	# normalizing Y value
 	normVal = sum(Y) * 0.1;
@@ -95,71 +203,38 @@ function GradientDescent(X,Y,maxIterations=500,lr=0.05,batchSize=50)
 	normVal = sum(Y) * 0.1;
 	Y_norm = Y ./ normVal;
 
-	# initialize a and b value
-	positiveYs = [Y_norm[i] >= 1e-5 for i = 1:N];
-	numPositives = sum(positiveYs);
-
-	A = [ones(numPositives) X[positiveYs]];
-
-	# solves the linear system for initial parameters a and b
-	l, initialParamB = A \ log.(Y_norm[positiveYs]);
+	if initialParameters
+		# initialize a and b value
+		positiveYs = [Y_norm[i] >= 1e-5 for i = 1:N];
+		numPositives = sum(positiveYs);
 	
-	# a = epx(ln(a))
-	initialParamA = exp(l);
+		A = [ones(numPositives) X[positiveYs]];
 	
-	
-	print("Initial guess for a with GradientDescent: ");
-	println(initialParamA * normVal);
-
-	
-	print("Initial guess for b with GradientDescent: ");
-	println(initialParamB)
-
-	##################################################
-
-	#=
-	
-	### Just other method to evaluate initial parameters ###
-	### But expects values of x ≈ 0 					 ###
-	
-	closeToZero = Y_norm[Bool[abs(X[i]) < ϵ for i = 1:N]
-	
-    #If x->0, then a * exp(b*x) -> a
-	initialParamA = sum(closeToZero) / length(closeToZero)
-	log_of_A = log(initialParamA)
-	
-    #b = (ln(y) - ln(a)) / x
-	initialParamB = 0.0
- 
-	valid_data = 0
-	
-	for i = 1:length(X)
-		y = Y_norm[i]
-  
-		if (y <= 0.1 || abs(X[i]) < 0.2) 
-			continue
-		end
-
+		# solves the linear system for initial parameters a and b
+		l, initialParamB = A \ log.(Y_norm[positiveYs]);
 		
-		valid_data += 1
-		initialParamB += (log(y) - log_of_A) / X[i]
+		# a = exp(ln(a))
+		initialParamA = exp(l);
+		
+		
+		print("Initial guess for a with GradientDescent: ");
+		println(initialParamA * normVal);
 	
+		
+		print("Initial guess for b with GradientDescent: ");
+		println(initialParamB)
+		
+		
+		paramA = initialParamA;
+		paramB = initialParamB;
+	
+	else
+		paramA,paramB = 0.0, 0.0		
 	end
 	
-	initialParamB /= valid_data
-
-	print("Initial guess for a: ")
-	println(initialParamA * normVal)
-
+	##################################################
 	
-	print("Initial guess for b: ")
-	println(initialParamB)
-	=#
-
-	### Training the parameters ###
-	
-	paramA = initialParamA;
-	paramB = initialParamB;
+		### Training the parameters ###
 	
 	loss = []
 	
@@ -242,10 +317,25 @@ end
 begin
 	a,b,loss = Newton(X,Y,100)
 	println()
-	a_2,b_2,loss_2 = GradientDescent(X,Y, 500 ,0.05,50)
+	a2,b2,loss2 = GradientDescent(X,Y, 500 ,0.05, 25)
+	a3,b3,loss3 = LevenbergMarquardt(X,Y)
 	
 	scatter(X,Y)
-	plot!(x->a_2*exp(b_2*x),lw=2,ls=:dash,color=:purple)
-	plot!(x->a*exp(b*x),lw=1.5,color=:red,ls=:dash)
+	plot!(x->a*exp(b*x),lw=2,ls=:dash,color=:purple,labe="Newton")
+	plot!(x->a2*exp(b2*x),lw=1.5,color=:red,ls=:dash,label="Gradient")
+	plot!(x->a3*exp(b3*x),lw=1.2,label="LevenbergMarquardt")
+end
+###
+
+###
+begin
+	mini = minimum(vec([length(loss) length(loss2) length(loss3)]))
+		
+	interval = [i for i = 1:mini]
+	
+	plot(title="Comparação Erros",ylims=(0,10))
+	plot!(interval,[loss[i] for i = 1:mini],label="Newton")
+	plot!(interval,[loss2[i] for i = 1:mini],label="Gradient")
+	plot!(interval,[loss3[i] for i = 1:mini],label="Levenberg")
 end
 ###
