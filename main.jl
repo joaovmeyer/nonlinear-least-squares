@@ -314,7 +314,7 @@ begin
 	a3,b3,loss3 = LevenbergMarquardt(X,Y)
 	
 	scatter(X,Y)
-	plot!(x->a*exp(b*x),lw=2,ls=:dash,color=:purple,labe="Newton")
+	plot!(x->a*exp(b*x),lw=2,ls=:dash,color=:purple,label="Newton")
 	plot!(x->a2*exp(b2*x),lw=1.5,color=:red,ls=:dash,label="Gradient")
 	plot!(x->a3*exp(b3*x),lw=1.2,label="LevenbergMarquardt")
 end
