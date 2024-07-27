@@ -2,13 +2,6 @@
 begin
 	using Plots
 	using Random
-end
-###
-
-###
-begin
-	using Plots
-	using Random
 
 ###
 
