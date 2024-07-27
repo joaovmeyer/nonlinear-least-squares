@@ -64,9 +64,6 @@ function gradientDescent(X, Y, maxIter = 500, lr = 0.05, batchSize = 75)
 		if (N % batchSize != 0 && false)
 			paramA = d / c;
 			paramB -= (gradB / (N % batchSize)) * lr;
-			
-			paramA2 = d2 / c2;
-			paramB2 += E / gradB2;
 		end
 	end
 
