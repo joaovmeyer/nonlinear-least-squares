@@ -31,8 +31,8 @@ function gradientDescent(X, Y, maxIter = 500, lr = 0.05, batchSize = 75)
 	loss = [];
 
 	for iter = 1:maxIter
-		c = 0.0;
-		d = 0.0;
+		
+		gradA = 0.0;
 		gradB = 0.0;
 
 		L = 0.0;
@@ -42,22 +42,19 @@ function gradientDescent(X, Y, maxIter = 500, lr = 0.05, batchSize = 75)
 			y = Y_norm[i];
 			
 			e = exp(paramB * x);
-			
-			c += e * e;
-			d += y * e;
-	
+
+			gradA += (paramA * e - y) * e
 			gradB += (paramA * e - y) * paramA * x * e;
 			
 			L += (paramA * e - y)^2;
 
 			# update the parameters every {batchSize} iterations
 			if (i % batchSize == 0)
-				paramA = d / c;
+				paramA -= (gradA / batchSize) * lr;
 				paramB -= (gradB / batchSize) * lr;
-				
-				gradB = 0.0
-				c = 0.0;
-				d = 0.0;
+
+				gradA = 0.0;
+				gradB = 0.0;
 			end
 
 		end
