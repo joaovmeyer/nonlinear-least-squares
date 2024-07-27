@@ -1,4 +1,4 @@
-function gradientDescent(X, Y, maxIter = 500, lr = 0.05, batchSize = 75)
+function GradientDescent(X, Y, maxIter = 500, lr = 0.05, batchSize = 75)
 
 	N = length(X);
 
