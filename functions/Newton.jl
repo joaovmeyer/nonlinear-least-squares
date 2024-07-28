@@ -1,7 +1,6 @@
 function Newton(X, Y, maxIter = 100, batchSize = -1)
 
 	N = length(X);
-	println(N);
 
 	# no batching
 	if (batchSize <= 0)
@@ -17,30 +16,9 @@ function Newton(X, Y, maxIter = 100, batchSize = -1)
 	normVal = sum(Y) * 0.1;
 	Y_norm = Y ./ normVal;
 
-	# initialize a and b value
-	positiveYs = [Y_norm[i] >= 1e-5 for i = 1:N];
-	numPositives = sum(positiveYs);
-
-	A = [ones(numPositives) X[positiveYs]];
-
-	# solves the linear system for initial parameters a and b
-	l, initialParamB = A \ log.(Y_norm[positiveYs]);
-	
-	# a = epx(ln(a))
-	initialParamA = exp(l);
-	
-	
-	print("Initial guess for a: ");
-	println(initialParamA * normVal);
-
-	
-	print("Initial guess for b: ");
-	println(initialParamB)
-
 
 	# tunning the initial parameters
-	paramA = initialParamA;
-	paramB = initialParamB;
+	paramA, paramB = initializeParameters(X, Y_norm);
 
 	loss = [];
 
