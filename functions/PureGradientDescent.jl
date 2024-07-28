@@ -1,40 +1,33 @@
-function GradientDescent(X, Y, maxIter = 500, lr = 0.05, batchSize = 75)
+function GradientDescent(X, Y, maxIter = 500, lr = 0.05, batchSize = -1)
 
 	N = length(X);
-
 	println(N);
+	
+	# no batching
+	if (batchSize <= 0)
+		batchSize = N;
+	else
+		# shuffle points if using batches
+		ordem = randperm(N)
+		X = X[ordem]
+		Y = Y[ordem]
+	end
 	
 	normVal = sum(Y) * 0.1;
 	Y_norm = Y ./ normVal;
 
-	# initialize a and b value
-	positiveYs = [Y_norm[i] >= 1e-5 for i = 1:N];
-	numPositives = sum(positiveYs);
-
-	A = [ones(numPositives) X[positiveYs]];
-
-	l, initialParamB = A \ log.(Y_norm[positiveYs]);
-	initialParamA = exp(l);
-	
-	print("Initial guess for a: ");
-	println(initialParamA * normVal);
-
-	
-	print("Initial guess for b: ");
-	println(initialParamB);
-
 
 	# training the parameters
-	paramA = initialParamA;
-	paramB = initialParamB;
+	paramA, paramB = initializeParameters(X, Y_norm);
 
 	loss = [];
+	
+	pointsSeen = 0;
+	gradA = 0.0;
+	gradB = 0.0;
 
 	for iter = 1:maxIter
 		
-		gradA = 0.0;
-		gradB = 0.0;
-
 		L = 0.0;
 	
 		for i = 1:N
@@ -48,11 +41,14 @@ function GradientDescent(X, Y, maxIter = 500, lr = 0.05, batchSize = 75)
 			
 			L += (paramA * e - y)^2;
 
+			pointsSeen += 1;
+
 			# update the parameters every {batchSize} iterations
-			if (i % batchSize == 0)
+			if (pointsSeen == batchSize)
 				paramA -= (gradA / batchSize) * lr;
 				paramB -= (gradB / batchSize) * lr;
 
+				pointsSeen = 0;
 				gradA = 0.0;
 				gradB = 0.0;
 			end
@@ -60,11 +56,6 @@ function GradientDescent(X, Y, maxIter = 500, lr = 0.05, batchSize = 75)
 		end
 
 		append!(loss, L);
-
-		if (N % batchSize != 0 && false)
-			paramA = d / c;
-			paramB -= (gradB / (N % batchSize)) * lr;
-		end
 	end
 
 	return paramA * normVal, paramB, loss;
