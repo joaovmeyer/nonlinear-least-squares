@@ -274,3 +274,12 @@ begin
 	plot!(x->a3*exp(b3*x),lw=1.2,label="Levenberg Marquardt")
 end
 ###
+begin
+	min = minimum(vec([length(loss) length(loss2) length(loss3)]))
+
+	plot(xaxis="Iterações",yaxis="Erro",yscale=:log10,title="Comparação dos Erros")
+	plot!([loss[i] for i = 1:min],label="Gauss Newton")
+	plot!([loss2[i] for i = 1:min],label="GradientDescent")
+	plot!([loss3[i] for i = 1:min],label="Levenberg Marquardt")
+end
+###
