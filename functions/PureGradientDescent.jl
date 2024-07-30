@@ -1,7 +1,6 @@
 function GradientDescent(X, Y, maxIter = 500, lr = 0.05, batchSize = -1)
 
 	N = length(X);
-	println(N);
 	
 	# no batching
 	if (batchSize <= 0)
